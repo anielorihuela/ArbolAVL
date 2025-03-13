@@ -25,9 +25,9 @@ public class ArbolAVL <T extends Comparable<T>> {
         return raiz;
     }
     
-    public boolean  busca(NodoBinario<T> actual, T elem){
+    public NodoBinario<T>  busca(NodoBinario<T> actual, T elem){
            if(actual==null){
-               return false;
+               return actual;
            }
            else if(elem.compareTo(actual.getElem())<0){
                return busca(actual.getIzq(), elem);
@@ -36,9 +36,20 @@ public class ArbolAVL <T extends Comparable<T>> {
                return busca(actual.getDer(), elem);
            }
            else{
-               return true;
+               return actual;
            }
     }
+    public ArrayList<T> inOrden(NodoBinario<T> actual, ArrayList<T> lista){
+            if(actual==null){
+                return lista;
+            }
+            
+            inOrden(actual.getIzq(),lista);
+            lista.add(actual.getElem());
+            inOrden(actual.getDer(),lista);
+            return lista;
+            
+        }
     public int altura(NodoBinario actual){
             if(actual==null)
                 return 0;
@@ -75,59 +86,69 @@ public class ArbolAVL <T extends Comparable<T>> {
               System.out.println("");
           }
       }
-  public void borrar(T dato){
-        if(busca(raiz, dato)){
-            borrarAux(raiz, dato);
-        }
-        else{
-            System.out.println(dato + " no se encontro");
-        }
-        
+public NodoBinario<T> borrar(NodoBinario<T> actual, T dato) {
+    // Buscar el nodo a eliminar
+    NodoBinario<T> nodo = busca(actual, dato);
+    if (nodo == null) {
+        System.out.println(dato + " no se encontró");
+        return null;
     }
-    private NodoBinario<T> borrarAux(NodoBinario<T> actual, T dato){
-        if(actual ==null){
-            return actual;
-        }
-        else if(dato.compareTo(actual.getElem())<0){
-            actual.setIzq(borrarAux(actual.getIzq(), dato));
-        }
-        else if(dato.compareTo(actual.getElem())>0){
-            actual.setDer(borrarAux(actual.getDer(), dato));
-        }
-        else{
-            if(actual.getDer()==null && actual.getIzq()==null){
-                actual = null;
+    
+    // Caso 1: El nodo es una hoja (no tiene hijos)
+    if (nodo.getIzq() == null && nodo.getDer() == null) {
+        if (nodo.getPapa() != null) {
+            if (nodo == nodo.getPapa().getIzq()) {
+                nodo.getPapa().setIzq(null);
+            } else {
+                nodo.getPapa().setDer(null);
             }
-            else if(actual.getDer()!=null){
-                actual.setElem(sucesor(actual));
-                actual.setDer(borrarAux(actual.getDer(), actual.getElem()));
+        } else {
+            // Si es la raíz y es hoja, el árbol queda vacío
+            raiz = null;
+        }
+        return nodo;
+    }
+    
+    // Caso 2: El nodo tiene un solo hijo
+    if (nodo.getIzq() == null || nodo.getDer() == null) {
+        NodoBinario<T> hijo = (nodo.getIzq() != null) ? nodo.getIzq() : nodo.getDer();
+        if (nodo.getPapa() != null) {
+            if (nodo == nodo.getPapa().getIzq()) {
+                nodo.getPapa().setIzq(hijo);
+            } else {
+                nodo.getPapa().setDer(hijo);
             }
-            else{
-                actual.setElem(predecesor(actual));
-                actual.setIzq(borrarAux(actual.getIzq(), actual.getElem()));
-            }
+            hijo.setPapa(nodo.getPapa());
+        } else {
+            // Si es la raíz, el hijo pasa a ser la nueva raíz
+            raiz = hijo;
+            hijo.setPapa(null);
         }
-        return actual;
-        
-        
-        
+        return nodo;
     }
-    private T sucesor(NodoBinario<T> actual){
-        actual = actual.getDer();
-        
-        while(actual.getIzq()!=null){
-            actual = actual.getIzq();
+    
+    // Caso 3: El nodo tiene dos hijos
+    // Buscar el sucesor inorden: mínimo del subárbol derecho
+    NodoBinario<T> sucesor = nodo.getDer();
+    while (sucesor.getIzq() != null) {
+        sucesor = sucesor.getIzq();
+    }
+    // Copiar el elemento del sucesor en el nodo a borrar
+    nodo.setElem(sucesor.getElem());
+    
+    // El sucesor puede tener a lo sumo un hijo (derecho)
+    if (sucesor.getPapa() != null) {
+        if (sucesor == sucesor.getPapa().getIzq()) {
+            sucesor.getPapa().setIzq(sucesor.getDer());
+        } else {
+            sucesor.getPapa().setDer(sucesor.getDer());
         }
-        return actual.getElem();
-    }
-    private T predecesor(NodoBinario<T> actual){
-        actual = actual.getIzq();
-        
-        while(actual.getDer()!=null){
-            actual = actual.getDer();
+        if (sucesor.getDer() != null) {
+            sucesor.getDer().setPapa(sucesor.getPapa());
         }
-        return actual.getElem();
     }
+    return sucesor;
+}
     public void borrarAVL(T dato){
         /*Caso 1: el dato a borrar está en la hoja. Solo que el papá apunte a mulo
         Caso 2: Si solo hay un dato. raiz=null
@@ -249,8 +270,9 @@ public class ArbolAVL <T extends Comparable<T>> {
                 
             }
             beta.setPapa(papa);
-            alfa.actualizaFe(0);
-            beta.actualizaFe(0);
+            alfa.actualizaFe(altura(alfa.getDer())-altura(alfa.getIzq()));
+            beta.actualizaFe(altura(beta.getDer())-altura(beta.getIzq()));
+            gama.actualizaFe(altura(gama.getDer())-altura(gama.getIzq()));
             return beta;
         }
         
@@ -287,19 +309,9 @@ public class ArbolAVL <T extends Comparable<T>> {
                 }
             }
             gama.setPapa(papa);
-            if(gama.getFe()==0){
-                alfa.actualizaFe(0);
-                beta.actualizaFe(0);
-            }
-            else if (gama.getFe()==1){
-                alfa.actualizaFe(-1);
-                beta.actualizaFe(0);   
-            }
-            else{
-                alfa.actualizaFe(0);
-                beta.actualizaFe(1);
-            }
-            gama.actualizaFe(0);
+            alfa.actualizaFe(altura(alfa.getDer())-altura(alfa.getIzq()));
+            beta.actualizaFe(altura(beta.getDer())-altura(beta.getIzq()));
+            gama.actualizaFe(altura(gama.getDer())-altura(gama.getIzq()));
             return gama;
         }
         
@@ -333,8 +345,9 @@ public class ArbolAVL <T extends Comparable<T>> {
                 }
                 beta.setPapa(papa);
             }
-            alfa.actualizaFe(0);
-            beta.actualizaFe(0);
+            alfa.actualizaFe(altura(alfa.getDer())-altura(alfa.getIzq()));
+            beta.actualizaFe(altura(beta.getDer())-altura(beta.getIzq()));
+            gama.actualizaFe(altura(gama.getDer())-altura(gama.getIzq()));
             return beta;
         }
         
@@ -371,19 +384,9 @@ public class ArbolAVL <T extends Comparable<T>> {
                 }
                 gama.setPapa(papa);
             }
-            if(gama.getFe()==0){
-                alfa.actualizaFe(0);
-                beta.actualizaFe(0);
-            }
-            else if (gama.getFe()==1){
-                alfa.actualizaFe(1);   
-                beta.actualizaFe(0);
-            }
-            else{
-                alfa.actualizaFe(0);
-                beta.actualizaFe(-1);
-            }
-            gama.actualizaFe(0);
+            alfa.actualizaFe(altura(alfa.getDer())-altura(alfa.getIzq()));
+            beta.actualizaFe(altura(beta.getDer())-altura(beta.getIzq()));
+            gama.actualizaFe(altura(gama.getDer())-altura(gama.getIzq()));
             return gama;
         }
     }
