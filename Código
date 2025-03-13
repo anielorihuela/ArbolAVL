@@ -1,0 +1,381 @@
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Random;
+import java.util.Stack;
+
+/**
+ *
+ * @author annie
+ * @param <T>
+ */
+public class ArbolAVL <T extends Comparable<T>> {
+    private NodoBinario<T> raiz;
+    private int cont;
+
+    public ArbolAVL(NodoBinario<T> raiz) {
+        this.raiz = raiz;
+    }
+    public ArbolAVL() {
+        this.raiz = null;
+               
+    }
+
+    public NodoBinario<T> getRaiz() {
+        return raiz;
+    }
+    
+    public boolean  busca(NodoBinario<T> actual, T elem){
+           if(actual==null){
+               return false;
+           }
+           else if(elem.compareTo(actual.getElem())<0){
+               return busca(actual.getIzq(), elem);
+           }
+           else if(elem.compareTo(actual.getElem())>0){
+               return busca(actual.getDer(), elem);
+           }
+           else{
+               return true;
+           }
+    }
+  public void porNivel(NodoBinario<T> actual, ArrayList<NodoBinario> lista){
+          Queue<NodoBinario<T>> cola = new LinkedList<>(); 
+          NodoBinario temp;
+          actual = raiz;
+          
+          cola.add(actual);
+          lista.add(actual);
+          while(!cola.isEmpty()){
+              temp = cola.poll();
+              if((temp.hasIzq())){
+                  actual=temp.getIzq();
+                  lista.add(actual);
+                  cola.offer(actual);
+              }
+              if((temp.hasDer())){
+                  actual=temp.getDer();
+                  lista.add(actual);
+                  cola.offer(actual);
+              }
+              
+          }
+          for(int i=0;i<lista.size();i++){
+              System.out.println("Nodo "+i+":");
+              System.out.println("Elemento almacenado: "+lista.get(i).getElem());
+              System.out.println("Factor de equilibrio: "+lista.get(i).getFe());
+              System.out.println("");
+          }
+      }
+  public void borrar(T dato){
+        if(busca(raiz, dato)){
+            borrarAux(raiz, dato);
+        }
+        else{
+            System.out.println(dato + " no se encontro");
+        }
+        
+    }
+    private NodoBinario<T> borrarAux(NodoBinario<T> actual, T dato){
+        if(actual ==null){
+            return actual;
+        }
+        else if(dato.compareTo(actual.getElem())<0){
+            actual.setIzq(borrarAux(actual.getIzq(), dato));
+        }
+        else if(dato.compareTo(actual.getElem())>0){
+            actual.setDer(borrarAux(actual.getDer(), dato));
+        }
+        else{
+            if(actual.getDer()==null && actual.getIzq()==null){
+                actual = null;
+            }
+            else if(actual.getDer()!=null){
+                actual.setElem(sucesor(actual));
+                actual.setDer(borrarAux(actual.getDer(), actual.getElem()));
+            }
+            else{
+                actual.setElem(predecesor(actual));
+                actual.setIzq(borrarAux(actual.getIzq(), actual.getElem()));
+            }
+        }
+        return actual;
+        
+        
+        
+    }
+    private T sucesor(NodoBinario<T> actual){
+        actual = actual.getDer();
+        
+        while(actual.getIzq()!=null){
+            actual = actual.getIzq();
+        }
+        return actual.getElem();
+    }
+    private T predecesor(NodoBinario<T> actual){
+        actual = actual.getIzq();
+        
+        while(actual.getDer()!=null){
+            actual = actual.getDer();
+        }
+        return actual.getElem();
+    }
+    public void borrarAVL(T dato){
+        /*Caso 1: el dato a borrar está en la hoja. Solo que el papá apunte a mulo
+        Caso 2: Si solo hay un dato. raiz=null
+        Caso 3: El hijo que le sigue a la raiz hay que borrarlo, entonces hijo=raiz
+        Caso 4: Si el dato está "en medio". Ordenas los datos "inorden". Buscas el número más chico de la rama que empieza a la derecha
+        */
+        NodoBinario<T> actual = borrarAux(raiz, dato);
+        NodoBinario<T>papa;
+        if(actual==null){
+            return;
+        }
+       boolean check=false;
+        while(!check && actual.getPapa()!=null){
+            papa = actual.getPapa();
+            if(actual.getElem().compareTo(papa.getElem())<0){
+                papa.setFe(1);
+            }
+            else{
+                papa.setFe(-1);
+            }
+            if(papa.getFe()==-1||papa.getFe()==1){
+                check=true;
+            }
+            if(papa.getFe()==2 || papa.getFe()==-2){
+                papa = rotar(papa);
+            }
+            actual = papa;        
+        }
+        
+    }
+    public void insertaAVL(T elem){
+        NodoBinario<T> actual = raiz;
+        NodoBinario<T> nuevo = new NodoBinario(elem);
+        NodoBinario<T> papa= new NodoBinario();
+        boolean check=false;
+        
+        if(actual==null){
+            raiz=nuevo;
+        }
+        while(actual!=null && !check){
+            papa = actual;
+            if(elem.compareTo(actual.getElem())<0){
+                actual = actual.getIzq();
+            }
+            else if(elem.compareTo(actual.getElem())>0){
+                actual = actual.getDer();
+            }
+            else{
+                check=true;
+            }
+            if(check){
+                return;
+            }
+            
+        }
+        if(nuevo!=raiz){
+            if(elem.compareTo(papa.getElem())<0){
+                papa.setIzq(nuevo);
+            }
+            else{
+                papa.setDer(nuevo);
+            }
+            nuevo.setPapa(papa);
+            cont++;
+        }
+        
+            
+        check=false;
+        actual = nuevo;
+        while(!check && actual.getPapa()!=null){
+            papa = actual.getPapa();
+            if(actual.getElem().compareTo(papa.getElem())<0){
+                papa.setFe(-1);
+            }
+            else{
+                papa.setFe(1);
+            }
+            if(papa.getFe()==0){
+                check=true;
+            }
+            else if(papa.getFe()==2 || papa.getFe()==-2){
+                papa = rotar(papa);
+            }
+           
+            actual = papa;
+            
+        }
+    }
+    public NodoBinario<T> rotar(NodoBinario<T> actual){
+        NodoBinario<T> alfa, beta, gama, a, b,c,d,papa;
+        papa=actual.getPapa();
+        
+        //izq-izq
+        if(actual.getFe()==-2 && (actual.getIzq().getFe()==-1 || actual.getIzq().getFe()==0)){ 
+            alfa=actual;
+            beta=alfa.getIzq();
+            gama = beta.getIzq();
+            c=beta.getDer();
+            alfa.setIzq(c);
+            if(beta.hasDer()){
+                c.setPapa(alfa);
+            }
+            beta.setIzq(gama);
+            gama.setPapa(beta);
+            beta.setDer(alfa);
+            alfa.setPapa(beta);
+            if(papa==null){
+                raiz=beta;
+                beta.setPapa(null);
+            }
+            else{
+                if(beta.getElem().compareTo(papa.getElem())<0){
+                    papa.setIzq(beta);
+                    
+                }
+                else{
+                    papa.setDer(beta);
+                }
+                
+            }
+            beta.setPapa(papa);
+            alfa.actualizaFe(0);
+            beta.actualizaFe(0);
+            return beta;
+        }
+        
+        //der-izq
+        if(actual.getFe()==2 && actual.getDer().getFe()==-1){ 
+            alfa=actual;
+            beta=alfa.getDer();
+            gama=beta.getIzq();
+            b=gama.getIzq();
+            c=gama.getDer();
+            beta.setIzq(c);
+            if(gama.hasDer()){
+                c.setPapa(beta);
+            }
+            alfa.setDer(b);
+            if(gama.hasIzq()){
+                b.setPapa(alfa);
+            }
+            gama.setDer(beta);
+            beta.setPapa(gama);
+            gama.setIzq(alfa);
+            alfa.setPapa(gama);
+            
+            if(papa==null){
+                raiz=gama;
+                gama.setPapa(null);
+            }
+            else{
+                if(gama.getElem().compareTo(papa.getElem())<0){
+                    papa.setIzq(gama);
+                }
+                else{
+                    papa.setDer(gama);
+                }
+            }
+            gama.setPapa(papa);
+            if(gama.getFe()==0){
+                alfa.actualizaFe(0);
+                beta.actualizaFe(0);
+            }
+            else if (gama.getFe()==1){
+                alfa.actualizaFe(-1);
+                beta.actualizaFe(0);   
+            }
+            else{
+                alfa.actualizaFe(0);
+                beta.actualizaFe(1);
+            }
+            gama.actualizaFe(0);
+            return gama;
+        }
+        
+        //der-der
+        if(actual.getFe()==2 && (actual.getDer().getFe()==1 || actual.getDer().getFe()==0)){
+            alfa=actual;
+            beta=alfa.getDer();
+            gama=beta.getDer();
+            b=beta.getIzq();
+            alfa.setDer(b);
+            if(beta.hasIzq()){
+                b.setPapa(alfa);
+            }
+ 
+            beta.setIzq(alfa);
+            alfa.setPapa(beta);
+            beta.setDer(gama);
+            gama.setPapa(beta);
+            
+            if(papa==null){
+                raiz=beta;
+                beta.setPapa(null);
+            }
+            else{
+                if(beta.getElem().compareTo(papa.getElem())<0){
+                    papa.setIzq(beta);
+                    
+                }
+                else{
+                    papa.setDer(beta);
+                }
+                beta.setPapa(papa);
+            }
+            alfa.actualizaFe(0);
+            beta.actualizaFe(0);
+            return beta;
+        }
+        
+        //izq-der
+        else{
+            alfa=actual;
+            beta=alfa.getIzq();
+            gama=beta.getDer();
+            c=gama.getIzq();
+            d=gama.getDer();
+            beta.setDer(c);
+            if(gama.hasIzq()){
+                c.setPapa(beta);
+            }
+            alfa.setIzq(d);
+            if(gama.hasDer()){
+                d.setPapa(alfa);
+            }
+            gama.setIzq(beta);
+            beta.setPapa(gama);
+            gama.setDer(alfa);
+            alfa.setPapa(gama);
+            
+            if(papa==null){
+                raiz=gama;
+                gama.setPapa(null);
+            }
+            else{
+                if(gama.getElem().compareTo(papa.getElem())<0){
+                    papa.setIzq(gama);
+                }
+                else{
+                    papa.setDer(gama);
+                }
+                gama.setPapa(papa);
+            }
+            if(gama.getFe()==0){
+                alfa.actualizaFe(0);
+                beta.actualizaFe(0);
+            }
+            else if (gama.getFe()==1){
+                alfa.actualizaFe(1);   
+                beta.actualizaFe(0);
+            }
+            else{
+                alfa.actualizaFe(0);
+                beta.actualizaFe(-1);
+            }
+            gama.actualizaFe(0);
+            return gama;
+        }
+    }
